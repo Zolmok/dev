@@ -12,3 +12,4 @@ dependencies = [
 [[package]]
 name = "scuttle"
 version = "0.1.0"
+source = "git+https://github.com/socketwiz/scuttle?branch=main#519c09d45046a76f50902afc25595ca5fb728a66"
