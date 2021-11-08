@@ -1,4 +1,4 @@
 
 * dev
 
-A utility I used to create tmux sessions for my various projects.
+A utility I used to create tmux sessions for my various projects.  I've included the shell script I based this project from as a reference.
