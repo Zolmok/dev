@@ -9,9 +9,10 @@ fn main() {
     let base_name = current_dir.file_name().unwrap();
 
     // check if session exists
+    let session = format!("-t={}", base_name.to_str().unwrap());
     let tmux_has_session = scuttle::App {
         command: String::from("tmux"),
-        args: vec!["has-session", "-t", base_name.to_str().unwrap()],
+        args: vec!["has-session", session.as_str()],
     };
 
     // attach to a session
