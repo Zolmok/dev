@@ -6,7 +6,7 @@ I've included the shell script I based this project from as a
 reference.
 
 There is a default configuration it will use to create 4 windows,
-which suits my typical workflow.  Or you can create a ~dev.json~ file
+which suits my typical workflow.  Or you can create a ~.dev.json~ file
 and setup a custom session.
 
 #+BEGIN_SRC json
