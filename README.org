@@ -1,4 +1,30 @@
 
 * dev
 
-A utility I used to create tmux sessions for my various projects.  I've included the shell script I based this project from as a reference.
+A utility I used to create tmux sessions for my various projects.
+I've included the shell script I based this project from as a
+reference.
+
+There is a default configuration it will use to create 4 windows,
+which suits my typical workflow.  Or you can create a ~dev.json~ file
+and setup a custom session.
+
+#+BEGIN_SRC json
+{
+  "session": "app-name",
+  "windows": [
+    {
+      "name": "first-window-name",
+      "actions": ["commands to execute in that window"],
+      "pwd": "./directory/to/change/to",
+      "select": true // true if you want this window selected after the session starts
+    },
+    {
+      "name": "second-window",
+      "actions": ["commands to execute in this window"],
+      "pwd": "./directory/to/change/to",
+      "select": false
+    }
+  ]
+}
+#+END_SRC
