@@ -5,6 +5,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
+use scuttle::{App, Args};
+
 extern crate scuttle;
 
 #[derive(Deserialize, Debug)]
@@ -19,6 +21,25 @@ struct Window {
 struct Config {
     session: String,
     windows: Vec<Window>,
+}
+
+/// Run a list of apps and print out the command and it's arguments before running
+///
+/// # Arguments
+///
+/// * `apps` - A vector of apps to run
+fn run_apps(apps: &[App]) {
+    for app in apps.iter() {
+        println!("");
+        println!("========================");
+        println!("$ {} {}", app.command, Args(app.args.to_owned()));
+        println!("========================");
+
+        match scuttle::run_status(app) {
+            Err(error) => panic!("panic{}", error),
+            Ok(_status) => continue,
+        };
+    }
 }
 
 fn run_default() {
@@ -112,11 +133,11 @@ fn run_default() {
         ],
     };
 
-    match scuttle::run_app(&tmux_has_session) {
+    match scuttle::run_status(&tmux_has_session) {
         Err(error) => panic!("{}", error),
         Ok(status) => match status.code() {
             Some(0) => {
-                scuttle::run_app(&tmux_attach).unwrap();
+                scuttle::run_status(&tmux_attach).unwrap();
             }
             Some(1) => {
                 let apps: &[scuttle::App] = &[
@@ -129,7 +150,7 @@ fn run_default() {
                     tmux_attach,
                 ];
 
-                scuttle::run_apps(apps);
+                run_apps(apps);
             }
             Some(code) => println!("Unknown exit status: {}", code),
             None => (),
@@ -177,7 +198,8 @@ fn run_with_config(config: Config) {
             "-s".to_string(),
             base_name.to_owned(),
             "-n".to_string(),
-            "Server".to_string(),
+            // use first windows name
+            config.windows[0].name.to_owned(),
             "-d".to_string(),
         ],
     };
@@ -241,7 +263,7 @@ fn run_with_config(config: Config) {
                 args: vec![
                     "select-window".to_string(),
                     "-t".to_string(),
-                    base_split.to_string()
+                    base_split.to_string(),
                 ],
             }
         };
@@ -251,12 +273,12 @@ fn run_with_config(config: Config) {
     }
 
     // has-session
-    match scuttle::run_app(&tmux_has_session) {
+    match scuttle::run_status(&tmux_has_session) {
         Err(error) => panic!("{}", error),
         Ok(status) => match status.code() {
             Some(0) => {
                 // attach
-                scuttle::run_app(&tmux_attach).unwrap();
+                scuttle::run_status(&tmux_attach).unwrap();
             }
             Some(1) => {
                 // new-window
@@ -265,17 +287,17 @@ fn run_with_config(config: Config) {
                 let keys: &[scuttle::App] = &commands;
 
                 // create window
-                scuttle::run_apps(apps);
+                run_apps(apps);
                 // changed directory to pwd
-                scuttle::run_apps(pwds);
+                run_apps(pwds);
                 // run commands
-                scuttle::run_apps(keys);
+                run_apps(keys);
                 // select window
                 if tmux_select.command != "" {
-                    scuttle::run_app(&tmux_select).unwrap();
+                    scuttle::run_status(&tmux_select).unwrap();
                 }
                 // attach
-                scuttle::run_app(&tmux_attach).unwrap();
+                scuttle::run_status(&tmux_attach).unwrap();
             }
             Some(code) => println!("Unknown exit status: {}", code),
             None => (),
