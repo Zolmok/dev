@@ -174,7 +174,7 @@ fn read_config_from_file<P: AsRef<Path>>(path: P) -> Result<Config, String> {
     Ok(config)
 }
 
-fn run_with_config(config: Config) {
+fn run_with_json_config(config: Config) {
     let base_name = config.session;
 
     // check if session exists
@@ -305,11 +305,42 @@ fn run_with_config(config: Config) {
     }
 }
 
-fn main() {
-    let config_file = "./.dev.json";
+fn run_with_kdl_config(config: &str) {
+    let zellij_with_layout = scuttle::App {
+        command: String::from("zellij"),
+        args: vec!["--layout".to_string(), config.to_string()],
+    };
 
-    match read_config_from_file(config_file) {
-        Ok(config) => run_with_config(config),
+    match scuttle::run_status(&zellij_with_layout) {
+        Err(error) => panic!("{}", error),
+        Ok(_status) => return,
+    }
+}
+
+fn main() {
+    let config_json = "./.dev.json";
+    let config_kdl = "./.dev.kdl";
+
+    match Path::new(config_json).try_exists() {
+        Ok(path_exists) => {
+            if path_exists {
+                match read_config_from_file(config_json) {
+                    Ok(config) => run_with_json_config(config),
+                    _ => run_default(),
+                };
+            } else {
+                match Path::new(config_kdl).try_exists() {
+                    Ok(path_exists) => {
+                        if path_exists {
+                            run_with_kdl_config(config_kdl);
+                        } else {
+                            run_default();
+                        }
+                    }
+                    _ => run_default(),
+                };
+            }
+        }
         _ => run_default(),
     };
 }
