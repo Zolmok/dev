@@ -72,54 +72,43 @@ fn run_default() {
             "-s".to_string(),
             base_name.to_str().unwrap().to_string(),
             "-n".to_string(),
-            "Server".to_string(),
+            "Code".to_string(),
             "-d".to_string(),
         ],
     };
 
     // create new windows
     let base_1 = format!("{}:1", base_name.to_str().unwrap());
-    let tmux_new_window_ui = scuttle::App {
+    let tmux_new_window_zsh = scuttle::App {
         command: String::from("tmux"),
         args: vec![
             "new-window".to_string(),
             "-t".to_string(),
             base_1.to_string(),
             "-n".to_string(),
-            "UI".to_string(),
+            "Zsh".to_string(),
         ],
     };
     let base_2 = format!("{}:2", base_name.to_str().unwrap());
-    let tmux_new_window_tests = scuttle::App {
+    let tmux_new_window_server = scuttle::App {
         command: String::from("tmux"),
         args: vec![
             "new-window".to_string(),
             "-t".to_string(),
             base_2.to_string(),
             "-n".to_string(),
-            "Tests".to_string(),
+            "Server".to_string(),
         ],
     };
     let base_3 = format!("{}:3", base_name.to_str().unwrap());
-    let tmux_new_window_code = scuttle::App {
+    let tmux_new_window_ui = scuttle::App {
         command: String::from("tmux"),
         args: vec![
             "new-window".to_string(),
             "-t".to_string(),
             base_3.to_string(),
             "-n".to_string(),
-            "Code".to_string(),
-        ],
-    };
-    let base_4 = format!("{}:4", base_name.to_str().unwrap());
-    let tmux_new_window_zsh = scuttle::App {
-        command: String::from("tmux"),
-        args: vec![
-            "new-window".to_string(),
-            "-t".to_string(),
-            base_4.to_string(),
-            "-n".to_string(),
-            "Zsh".to_string(),
+            "UI".to_string(),
         ],
     };
 
@@ -142,10 +131,9 @@ fn run_default() {
             Some(1) => {
                 let apps: &[scuttle::App] = &[
                     tmux_new_session,
-                    tmux_new_window_ui,
-                    tmux_new_window_tests,
-                    tmux_new_window_code,
                     tmux_new_window_zsh,
+                    tmux_new_window_server,
+                    tmux_new_window_ui,
                     tmux_select_window,
                     tmux_attach,
                 ];
