@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use std::env;
 use std::error::Error;
@@ -41,6 +41,7 @@ pub trait ProcessRunner {
 pub trait FileSystem {
     fn exists(&self, path: &Path) -> bool;
     fn open(&self, path: &Path) -> Result<File, std::io::Error>;
+    fn write(&self, path: &Path, contents: &str) -> Result<(), std::io::Error>;
 }
 
 /// Trait for environment operations
@@ -74,6 +75,10 @@ impl FileSystem for RealFileSystem {
 
     fn open(&self, path: &Path) -> Result<File, std::io::Error> {
         File::open(path)
+    }
+
+    fn write(&self, path: &Path, contents: &str) -> Result<(), std::io::Error> {
+        std::fs::write(path, contents)
     }
 }
 
@@ -128,7 +133,7 @@ impl From<serde_json::Error> for DevError {
 // Configuration Types
 // ============================================================================
 
-#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct Window {
     pub name: String,
     pub actions: Vec<String>,
@@ -136,10 +141,60 @@ pub struct Window {
     pub select: bool,
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct Config {
     pub session: String,
     pub windows: Vec<Window>,
+}
+
+/// Create the default 4-window configuration
+pub fn default_config(session_name: &str) -> Config {
+    Config {
+        session: session_name.to_string(),
+        windows: vec![
+            Window {
+                name: "Code".to_string(),
+                actions: vec![],
+                pwd: ".".to_string(),
+                select: true,
+            },
+            Window {
+                name: "Zsh".to_string(),
+                actions: vec![],
+                pwd: ".".to_string(),
+                select: false,
+            },
+            Window {
+                name: "Server".to_string(),
+                actions: vec![],
+                pwd: ".".to_string(),
+                select: false,
+            },
+            Window {
+                name: "UI".to_string(),
+                actions: vec![],
+                pwd: ".".to_string(),
+                select: false,
+            },
+        ],
+    }
+}
+
+/// Initialize a new .dev.json config file in the current directory
+pub fn init_config<F: FileSystem, E: Environment>(fs: &F, env: &E) -> Result<(), DevError> {
+    let config_path = Path::new(".dev.json");
+
+    if fs.exists(config_path) {
+        return Err(DevError::new(".dev.json already exists"));
+    }
+
+    let session_name = get_session_name_from_cwd(env)?;
+    let config = default_config(&session_name);
+    let json = serde_json::to_string_pretty(&config)?;
+
+    fs.write(config_path, &json)?;
+    println!("Created .dev.json");
+    Ok(())
 }
 
 // ============================================================================
@@ -407,9 +462,20 @@ pub fn run<P: ProcessRunner, F: FileSystem, E: Environment>(
 // ============================================================================
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
     let runner = RealProcessRunner;
     let fs = RealFileSystem;
     let env = RealEnvironment;
+
+    // Handle --init flag
+    if args.len() > 1 && args[1] == "--init" {
+        if let Err(e) = init_config(&fs, &env) {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+        return;
+    }
 
     if let Err(e) = run(&runner, &fs, &env) {
         eprintln!("Error: {}", e);
@@ -472,25 +538,29 @@ mod tests {
 
     /// Mock filesystem
     struct MockFileSystem {
-        files: HashMap<PathBuf, String>,
+        files: RefCell<HashMap<PathBuf, String>>,
     }
 
     impl MockFileSystem {
         fn new() -> Self {
             MockFileSystem {
-                files: HashMap::new(),
+                files: RefCell::new(HashMap::new()),
             }
         }
 
-        fn with_file(mut self, path: &str, contents: &str) -> Self {
-            self.files.insert(PathBuf::from(path), contents.to_string());
+        fn with_file(self, path: &str, contents: &str) -> Self {
+            self.files.borrow_mut().insert(PathBuf::from(path), contents.to_string());
             self
+        }
+
+        fn get_written(&self, path: &str) -> Option<String> {
+            self.files.borrow().get(&PathBuf::from(path)).cloned()
         }
     }
 
     impl FileSystem for MockFileSystem {
         fn exists(&self, path: &Path) -> bool {
-            self.files.contains_key(path)
+            self.files.borrow().contains_key(path)
         }
 
         fn open(&self, _path: &Path) -> Result<File, std::io::Error> {
@@ -500,6 +570,11 @@ mod tests {
                 std::io::ErrorKind::NotFound,
                 "Mock file not found",
             ))
+        }
+
+        fn write(&self, path: &Path, contents: &str) -> Result<(), std::io::Error> {
+            self.files.borrow_mut().insert(path.to_path_buf(), contents.to_string());
+            Ok(())
         }
     }
 
@@ -954,6 +1029,68 @@ mod tests {
 
             let calls = runner.get_calls();
             assert_eq!(calls[0].command, "zellij");
+        }
+    }
+
+    mod default_config_tests {
+        use super::*;
+
+        #[test]
+        fn test_default_config_creates_correct_structure() {
+            let config = default_config("my-project");
+
+            assert_eq!(config.session, "my-project");
+            assert_eq!(config.windows.len(), 4);
+
+            assert_eq!(config.windows[0].name, "Code");
+            assert!(config.windows[0].select);
+
+            assert_eq!(config.windows[1].name, "Zsh");
+            assert!(!config.windows[1].select);
+
+            assert_eq!(config.windows[2].name, "Server");
+            assert_eq!(config.windows[3].name, "UI");
+        }
+
+        #[test]
+        fn test_default_config_all_windows_have_current_dir() {
+            let config = default_config("test");
+
+            for window in &config.windows {
+                assert_eq!(window.pwd, ".");
+                assert!(window.actions.is_empty());
+            }
+        }
+    }
+
+    mod init_config_tests {
+        use super::*;
+
+        #[test]
+        fn test_init_config_creates_file() {
+            let fs = MockFileSystem::new();
+            let env = MockEnvironment::new("/home/user/my-project");
+
+            let result = init_config(&fs, &env);
+            assert!(result.is_ok());
+
+            let written = fs.get_written(".dev.json");
+            assert!(written.is_some());
+
+            // Verify it's valid JSON and has correct structure
+            let config: Config = serde_json::from_str(&written.unwrap()).unwrap();
+            assert_eq!(config.session, "my-project");
+            assert_eq!(config.windows.len(), 4);
+        }
+
+        #[test]
+        fn test_init_config_fails_if_file_exists() {
+            let fs = MockFileSystem::new().with_file(".dev.json", "{}");
+            let env = MockEnvironment::new("/home/user/project");
+
+            let result = init_config(&fs, &env);
+            assert!(result.is_err());
+            assert!(result.unwrap_err().message.contains("already exists"));
         }
     }
 }

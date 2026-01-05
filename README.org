@@ -8,6 +8,7 @@ A Rust utility for creating and managing tmux or Zellij sessions for development
 - Attaches to existing sessions if they already exist
 - Supports custom configurations via JSON (~.dev.json~) or KDL (~.dev.kdl~) files
 - Falls back to a sensible default 4-window layout (Code, Zsh, Server, UI)
+- Generate a starter config file with ~--init~
 
 ** Installation
 
@@ -29,6 +30,16 @@ The tool checks for configuration files in this order:
 1. ~.dev.json~ - Custom tmux configuration
 2. ~.dev.kdl~ - Custom Zellij layout
 3. Default layout - Creates 4 windows (Code, Zsh, Server, UI)
+
+*** Generating a Config File
+
+To create a ~.dev.json~ starter config in the current directory:
+
+#+BEGIN_SRC sh
+dev --init
+#+END_SRC
+
+This generates a config with the default 4-window layout that you can customize. The session name is automatically set to the current directory name.
 
 ** Configuration
 
