@@ -1,40 +1,120 @@
-
 * dev
 
-A utility I used to create tmux sessions for my various projects.
-I've included the shell script I based this project from as a
-reference.
+A Rust utility for creating and managing tmux or Zellij sessions for development projects.
 
-There is a default configuration it will use to create 4 windows,
-which suits my typical workflow.  Or you can create a ~.dev.json~ file
-and setup a custom session.
+** Features
+
+- Automatically creates tmux or Zellij sessions with preconfigured windows
+- Attaches to existing sessions if they already exist
+- Supports custom configurations via JSON (~.dev.json~) or KDL (~.dev.kdl~) files
+- Falls back to a sensible default 4-window layout (Code, Zsh, Server, UI)
+
+** Installation
+
+#+BEGIN_SRC sh
+cargo build --release
+cp target/release/dev ~/.local/bin/
+#+END_SRC
+
+** Usage
+
+Run ~dev~ from the root of your project directory:
+
+#+BEGIN_SRC sh
+cd ~/projects/my-app
+dev
+#+END_SRC
+
+The tool checks for configuration files in this order:
+1. ~.dev.json~ - Custom tmux configuration
+2. ~.dev.kdl~ - Custom Zellij layout
+3. Default layout - Creates 4 windows (Code, Zsh, Server, UI)
+
+** Configuration
+
+*** JSON Configuration (tmux)
+
+Create a ~.dev.json~ file in your project root:
 
 #+BEGIN_SRC json
 {
-  "session": "app-name",
+  "session": "my-app",
   "windows": [
     {
-      "name": "first-window-name",
-      "actions": ["commands to execute in that window"],
-      "pwd": "./directory/to/change/to",
-      "select": true // true if you want this window selected after the session starts
+      "name": "Build",
+      "actions": ["cargo watch -x test -x build"],
+      "pwd": ".",
+      "select": true
     },
     {
-      "name": "second-window",
-      "actions": ["commands to execute in this window"],
-      "pwd": "./directory/to/change/to",
+      "name": "Code",
+      "actions": [],
+      "pwd": ".",
+      "select": false
+    },
+    {
+      "name": "Server",
+      "actions": ["npm run dev"],
+      "pwd": "./frontend",
       "select": false
     }
   ]
 }
 #+END_SRC
 
-Place the ~.dev.json~ file in the root of your project, then run ~dev~
-from the root of your project. It will look for ~.dev.json~ there. If it
-does not find it, it will run the default config.
+**** Window Properties
 
-It has recently been updated to look for zellij layouts and launch
-that if they are present instead.  Put your zellij layout into a
-file called ~.dev.kdl~ and if that file is present as opposed to a
-~.dev.json~ then zellij will be launched instead of tmux using the
-layout definition in that file.
+| Property | Type     | Description                                      |
+|----------+----------+--------------------------------------------------|
+| name     | string   | Window name displayed in tmux                    |
+| actions  | string[] | Commands to execute when the window is created   |
+| pwd      | string   | Working directory for the window                 |
+| select   | boolean  | If true, this window is selected after creation  |
+
+*** KDL Configuration (Zellij)
+
+Create a ~.dev.kdl~ file in your project root:
+
+#+BEGIN_SRC kdl
+layout {
+    tab name="Build" {
+        pane command="cargo" {
+            args "watch" "-x" "test" "-x" "build"
+        }
+    }
+    tab focus=true name="Code" {
+        pane
+    }
+    tab name="Shell" {
+        pane
+    }
+}
+#+END_SRC
+
+See the [[https://zellij.dev/documentation/layouts][Zellij layout documentation]] for more options.
+
+** Default Layout
+
+When no configuration file is found, the tool creates a tmux session with:
+
+| Window | Name   | Purpose                    |
+|--------+--------+----------------------------|
+|      0 | Code   | Primary editing window     |
+|      1 | Zsh    | General shell tasks        |
+|      2 | Server | Running development server |
+|      3 | UI     | Frontend/UI tasks          |
+
+The session name is derived from the current directory name.
+
+** Examples
+
+See ~dev-sample.json~ and ~dev-sample.kdl~ for example configurations.
+
+** Dependencies
+
+- [[https://serde.rs/][serde]] - Serialization framework
+- [[https://github.com/serde-rs/json][serde_json]] - JSON parsing
+
+** License
+
+MIT
