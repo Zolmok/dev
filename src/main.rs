@@ -287,6 +287,11 @@ pub fn attach_session<P: ProcessRunner>(runner: &P, session_name: &str) -> Resul
     Ok(())
 }
 
+/// Sanitize a session name for tmux (dots are delimiters in tmux)
+pub fn sanitize_session_name(name: &str) -> String {
+    name.replace('.', "_")
+}
+
 /// Get the current directory name as session name
 pub fn get_session_name_from_cwd<E: Environment>(env: &E) -> Result<String, DevError> {
     let cwd = env.current_dir()?;
@@ -294,7 +299,7 @@ pub fn get_session_name_from_cwd<E: Environment>(env: &E) -> Result<String, DevE
     current_dir
         .file_name()
         .and_then(|n| n.to_str())
-        .map(|s| s.to_string())
+        .map(|s| sanitize_session_name(s))
         .ok_or_else(|| DevError::new("Could not determine current directory name"))
 }
 
@@ -862,6 +867,30 @@ mod tests {
         }
     }
 
+    mod sanitize_session_name_tests {
+        use super::*;
+
+        #[test]
+        fn test_sanitize_replaces_dots() {
+            assert_eq!(sanitize_session_name("foo.tmp"), "foo_tmp");
+        }
+
+        #[test]
+        fn test_sanitize_replaces_multiple_dots() {
+            assert_eq!(sanitize_session_name("my.app.test"), "my_app_test");
+        }
+
+        #[test]
+        fn test_sanitize_no_dots() {
+            assert_eq!(sanitize_session_name("my-project"), "my-project");
+        }
+
+        #[test]
+        fn test_sanitize_empty_string() {
+            assert_eq!(sanitize_session_name(""), "");
+        }
+    }
+
     mod get_session_name_tests {
         use super::*;
 
@@ -877,6 +906,13 @@ mod tests {
             let env = MockEnvironment::new("/a/b/c/deep-folder");
             let result = get_session_name_from_cwd(&env).unwrap();
             assert_eq!(result, "deep-folder");
+        }
+
+        #[test]
+        fn test_get_session_name_sanitizes_dots() {
+            let env = MockEnvironment::new("/tmp/foo.tmp");
+            let result = get_session_name_from_cwd(&env).unwrap();
+            assert_eq!(result, "foo_tmp");
         }
     }
 
