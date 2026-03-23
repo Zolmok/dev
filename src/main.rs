@@ -147,13 +147,13 @@ pub struct Config {
     pub windows: Vec<Window>,
 }
 
-/// Create the default 4-window configuration
+/// Create the default 3-window configuration
 pub fn default_config(session_name: &str) -> Config {
     Config {
         session: session_name.to_string(),
         windows: vec![
             Window {
-                name: "Code".to_string(),
+                name: "Claude-Code".to_string(),
                 actions: vec![],
                 pwd: ".".to_string(),
                 select: true,
@@ -166,12 +166,6 @@ pub fn default_config(session_name: &str) -> Config {
             },
             Window {
                 name: "Server".to_string(),
-                actions: vec![],
-                pwd: ".".to_string(),
-                select: false,
-            },
-            Window {
-                name: "UI".to_string(),
                 actions: vec![],
                 pwd: ".".to_string(),
                 select: false,
@@ -1076,16 +1070,15 @@ mod tests {
             let config = default_config("my-project");
 
             assert_eq!(config.session, "my-project");
-            assert_eq!(config.windows.len(), 4);
+            assert_eq!(config.windows.len(), 3);
 
-            assert_eq!(config.windows[0].name, "Code");
+            assert_eq!(config.windows[0].name, "Claude-Code");
             assert!(config.windows[0].select);
 
             assert_eq!(config.windows[1].name, "Zsh");
             assert!(!config.windows[1].select);
 
             assert_eq!(config.windows[2].name, "Server");
-            assert_eq!(config.windows[3].name, "UI");
         }
 
         #[test]
@@ -1116,7 +1109,7 @@ mod tests {
             // Verify it's valid JSON and has correct structure
             let config: Config = serde_json::from_str(&written.unwrap()).unwrap();
             assert_eq!(config.session, "my-project");
-            assert_eq!(config.windows.len(), 4);
+            assert_eq!(config.windows.len(), 3);
         }
 
         #[test]

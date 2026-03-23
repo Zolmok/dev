@@ -7,7 +7,7 @@ A Rust utility for creating and managing tmux or Zellij sessions for development
 - Automatically creates tmux or Zellij sessions with preconfigured windows
 - Attaches to existing sessions if they already exist
 - Supports custom configurations via JSON (~.dev.json~) or KDL (~.dev.kdl~) files
-- Falls back to a sensible default 4-window layout (Code, Zsh, Server, UI)
+- Falls back to a sensible default 3-window layout (Claude-Code, Zsh, Server)
 - Generate a starter config file with ~--init~
 
 ** Installation
@@ -29,7 +29,7 @@ dev
 The tool checks for configuration files in this order:
 1. ~.dev.json~ - Custom tmux configuration
 2. ~.dev.kdl~ - Custom Zellij layout
-3. Default layout - Creates 4 windows (Code, Zsh, Server, UI)
+3. Default layout - Creates 3 windows (Claude-Code, Zsh, Server)
 
 *** Generating a Config File
 
@@ -39,7 +39,7 @@ To create a ~.dev.json~ starter config in the current directory:
 dev --init
 #+END_SRC
 
-This generates a config with the default 4-window layout that you can customize. The session name is automatically set to the current directory name.
+This generates a config with the default 3-window layout that you can customize. The session name is automatically set to the current directory name.
 
 ** Configuration
 
@@ -108,12 +108,11 @@ See the [[https://zellij.dev/documentation/layouts][Zellij layout documentation]
 
 When no configuration file is found, the tool creates a tmux session with:
 
-| Window | Name   | Purpose                    |
-|--------+--------+----------------------------|
-|      0 | Code   | Primary editing window     |
-|      1 | Zsh    | General shell tasks        |
-|      2 | Server | Running development server |
-|      3 | UI     | Frontend/UI tasks          |
+| Window | Name        | Purpose                    |
+|--------+-------------+----------------------------|
+|      0 | Claude-Code | Primary editing window     |
+|      1 | Zsh         | General shell tasks        |
+|      2 | Server      | Running development server |
 
 The session name is derived from the current directory name.
 
