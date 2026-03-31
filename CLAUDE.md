@@ -50,7 +50,7 @@ Tests use mock implementations (`MockProcessRunner`, `MockFileSystem`, `MockEnvi
 ### Configuration priority
 1. `.dev.json` - JSON config for tmux
 2. `.dev.kdl` - KDL layout for Zellij
-3. Default layout - 4 windows (Code, Zsh, Server, UI)
+3. Default layout - 3 windows (Claude-Code, Zsh, Server)
 
 ## Dependencies
 

@@ -311,37 +311,8 @@ pub fn run_default<P: ProcessRunner, E: Environment>(
     env: &E,
 ) -> Result<(), DevError> {
     let session_name = get_session_name_from_cwd(env)?;
-
-    if session_exists(runner, &session_name)? {
-        return attach_session(runner, &session_name);
-    }
-
-    // start a new session
-    let tmux_new_session = tmux_app(vec![
-        "new-session".to_string(),
-        "-s".to_string(),
-        session_name.clone(),
-        "-n".to_string(),
-        "Code".to_string(),
-        "-d".to_string(),
-    ]);
-
-    let tmux_select_window = tmux_app(vec![
-        "select-window".to_string(),
-        "-t".to_string(),
-        format!("{}:0.0", session_name),
-    ]);
-
-    let apps: Vec<App> = vec![
-        tmux_new_session,
-        create_window(&session_name, 1, "Zsh"),
-        create_window(&session_name, 2, "Server"),
-        create_window(&session_name, 3, "UI"),
-        tmux_select_window,
-    ];
-
-    run_apps(runner, &apps)?;
-    attach_session(runner, &session_name)
+    let config = default_config(&session_name);
+    run_with_json_config(runner, config)
 }
 
 /// Run with a JSON configuration
